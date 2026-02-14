@@ -29,13 +29,28 @@ def do_analysis():
 
 def test_function():
     board = chess.Board()
-    board.display()
-    print(board.to_string())
-    print(board.is_game_over())
-    board.set_state(board.ROOK_STATE)
-    board.display()
-    print(board.to_string())
-    print(board.is_game_over())
+    board.set_state(chess.STATE_TWO_KINGS)
+    print("PREPARE THYSELF!!")
+    while (board.is_game_over()[0] == False):
+        board.display()
+        command = input("Please type a move: ").split()
+        if len(command) != 4:
+            print("bro")
+        else:
+            start_r, start_c, end_r, end_c = int(command[0]), int(command[1]), int(command[2]), int(command[3])
+            move = ((start_r,start_c),(end_r,end_c))
+            if not board.make_move(move):
+                print("Invalid move. Try something else. Dickhead")
+    winner = ""
+    match board.is_game_over()[1]:
+        case "W":
+            print("Congratulations!! White wins!!")
+        case "B":
+            print("Congratulations!! Black wins!!")
+        case "D":
+            print("what")
+
+
 
 if __name__ == "__main__":
     main()

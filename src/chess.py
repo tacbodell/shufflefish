@@ -1,26 +1,27 @@
 from termcolor import colored
 
-class Board:
-    # QUICK-ACCESS STATES FOR DEBUGGING
-    START_STATE = "W BR BN BB BQ BK BB BN BR BP BP BP BP BP BP BP BP 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 WP WP WP WP WP WP WP WP WR WN WB WQ WK WB WN WR"
-    ROOK_STATE = "W BR BR BR BR BR BR BR BR BR BR BR BR BR BR BR BR BR BR BR BR BR BR BR BR BR BR BR BR BR BR BR BR WR WR WR WR WR WR WR WR WR WR WR WR WR WR WR WR WR WR WR WR WR WR WR WR WR WR WR WR WR WR WR WR "
+# QUICK-ACCESS STATES FOR DEBUGGING
+STATE_START = "white BR BN BB BQ BK BB BN BR BP BP BP BP BP BP BP BP 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 WP WP WP WP WP WP WP WP WR WN WB WQ WK WB WN WR"
+STATE_ROOK = "white BR BR BR BR BR BR BR BR BR BR BR BR BR BR BR BR BR BR BR BR BR BR BR BR BR BR BR BR BR BR BR BR WR WR WR WR WR WR WR WR WR WR WR WR WR WR WR WR WR WR WR WR WR WR WR WR WR WR WR WR WR WR WR WR "
+STATE_TWO_KINGS = "white BK 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 WK"
 
+
+class Board:
     def __init__(self,state=""):
         # The color player whose turn it is
-        self.to_play = 'W'
+        self.to_play = "white"
         # The pieces on the board
-        self.pieces = [['0','0','0','0','0','0','0','0'],
-                       ['0','0','0','0','0','0','0','0'],
-                       ['0','0','0','0','0','0','0','0'],
-                       ['0','0','0','0','0','0','0','0'],
-                       ['0','0','0','0','0','0','0','0'],
-                       ['0','0','0','0','0','0','0','0'],
-                       ['0','0','0','0','0','0','0','0'],
-                       ['0','0','0','0','0','0','0','0']]
+        o = Piece()
+        self.pieces = [[o,o,o,o,o,o,o,o],
+                       [o,o,o,o,o,o,o,o],
+                       [o,o,o,o,o,o,o,o],
+                       [o,o,o,o,o,o,o,o],
+                       [o,o,o,o,o,o,o,o],
+                       [o,o,o,o,o,o,o,o],
+                       [o,o,o,o,o,o,o,o],
+                       [o,o,o,o,o,o,o,o]]
         if state:
             self.set_state(state)
-        else:
-            self.set_state(Board.START_STATE)
 
     #Sets board to a certain state
     #PARAMS - s: String, a state to set the board to  .
@@ -29,7 +30,10 @@ class Board:
         if len(arr) != 65:
             print("Invalid string! Cannot load position.")
         else:
-            color_to_play = arr.pop(0)
+            color_to_play = arr.pop(0).lower()
+            if (color_to_play != "white" and color_to_play != "black"):
+                print("Invalid string! First parameter must be \'white\' or \'black\'")
+                return -1
             self.to_play = color_to_play
 
             for rank in range(8):
@@ -52,22 +56,51 @@ class Board:
                             case 'K': piece_type = "king"
                         self.pieces[rank][piece] = Piece(piece_type, piece_color)
 
-
-    #Get all legal moves on current board state.
-    #RETURN: array of all legal moves in algebraic notation.
+    #Makes a move on the board, if legal
+    #PARAMS: move - a move in move notation ((start_row,start_column),(final_row,final_column)
+    #RETURN: bool, representing whether the move was legal or not
+    def make_move(self,move):
+        start_position, end_position = move
+        legal_moves = self.get_legal_moves()
+        if move in legal_moves:
+            piece = self.pieces[start_position[0]][start_position[1]]
+            if piece.type == "king":
+                self.pieces[start_position[0]][start_position[1]] = Piece()
+                self.pieces[end_position[0]][end_position[1]] = piece
+            self.change_color_to_play()
+            return True
+        return False
+        
+    #Get all legal moves on board
+    #RETURN: array of tuples containing all legal moves in move notation
     def get_legal_moves(self):
-        pass
+        moves = []
+        for r in range(8):
+            for c in range(8):
+                if self.pieces[r][c].color == self.to_play:
+                    moves += self.get_legal_moves_for_piece(r,c)
+        return moves
 
-    #Get all pseudo-legal (legal disregarding checks) moves for the piece at coordinates r,c
+    #Get all legal moves for the piece at coordinates r,c
     #PARAMS: r - row index of piece to check. c - column index of piece to check.
     #RETURN: array of pseudo-legal moves in move notation
-    def get_pseudo_legal_moves_for_piece(self,r,c):
+    def get_legal_moves_for_piece(self,r,c):
         piece_type = self.pieces[r][c].type
+        test_board = Board(self.to_string())
         moves = []
         match piece_type:
-            case 'rook':
-                pass
-            
+            case 'empty':
+                return moves
+            case 'king':
+                directions = [(-1,-1),(-1, 0),(-1, 1),
+                              ( 0,-1),        ( 0, 1),
+                              ( 1,-1),( 1, 0),( 1, 1)]
+                for dr, dc in directions:
+                    new_r = dr + r
+                    new_c = dc + c
+                    if (0 <= new_r <= 7 and 0 <= new_c <= 7):
+                        moves.append(((r,c),(new_r,new_c)))
+                return moves
 
     #Returns a compact string representing the current board state to be loaded into other games.
     def to_string(self):
@@ -106,6 +139,13 @@ class Board:
         elif (black_king_exists):
             return (True,'B')
         return (True,'D')
+    
+    def change_color_to_play(self):
+        if self.to_play == "white":
+            self.to_play = "black"
+        else:
+            self.to_play = "white"
+
         
     #Print the board to the standard output
     def display(self):
@@ -138,6 +178,10 @@ class Board:
                     colored_piece = f"{piece_code:2}" # fallback
                 print(colored_piece, end=" ")
             print()
+        if self.to_play == "white":
+            print(colored("White to play.", "white", attrs=["bold"]))
+        else:
+            print(colored("Black to play.", "blue", attrs=["bold"]))
         print()
 
 class Piece:
