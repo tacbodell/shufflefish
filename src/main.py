@@ -29,7 +29,7 @@ def do_analysis():
 
 def test_function():
     board = chess.Board()
-    board.set_state(chess.STATE_TWO_KINGS)
+    board.set_state(chess.STATE_TWO_ROOKS)
     board.display()
     print("PREPARE THYSELF!!")
     while (board.is_game_over()[0] == False):
@@ -41,8 +41,6 @@ def test_function():
             start_pos_ind = board.algebraic_to_index(start_pos_alg)
             end_pos_ind = board.algebraic_to_index(end_pos_alg)
             move = (start_pos_ind, end_pos_ind)
-
-            print(move)
 
             if not board.make_move(move):
                 print("Invalid move. Try something else. Dickhead")

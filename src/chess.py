@@ -4,6 +4,7 @@ from termcolor import colored
 STATE_START = "white BR BN BB BQ BK BB BN BR BP BP BP BP BP BP BP BP 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 WP WP WP WP WP WP WP WP WR WN WB WQ WK WB WN WR"
 STATE_ROOK = "white BR BR BR BR BR BR BR BR BR BR BR BR BR BR BR BR BR BR BR BR BR BR BR BR BR BR BR BR BR BR BR BR WR WR WR WR WR WR WR WR WR WR WR WR WR WR WR WR WR WR WR WR WR WR WR WR WR WR WR WR WR WR WR WR "
 STATE_TWO_KINGS = "white BK 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 WK"
+STATE_TWO_ROOKS = "white BR 0 0 BK 0 0 0 BR 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 WR 0 0 0 WK 0 0 WR"
 
 
 class Board:
@@ -64,12 +65,80 @@ class Board:
         legal_moves = self.get_legal_moves()
         if move in legal_moves:
             piece = self.pieces[start_position[0]][start_position[1]]
-            if piece.type == "king":
-                self.pieces[start_position[0]][start_position[1]] = Piece()
-                self.pieces[end_position[0]][end_position[1]] = piece
+            match piece.type:
+                case "king":
+                    self.pieces[start_position[0]][start_position[1]] = Piece()
+                    self.pieces[end_position[0]][end_position[1]] = piece
+                case "rook":
+                    # get movement direction
+                    diffr = end_position[0] - start_position[0]
+                    diffc = end_position[1] - start_position[1]
+                    direction = (
+                        0 if diffr == 0 else int(diffr / abs(diffr)),
+                        0 if diffc == 0 else int(diffc / abs(diffc))
+                    )
+
+                    # remove rook from start
+                    self.pieces[start_position[0]][start_position[1]] = Piece()
+
+                    # store displaced piece (if any)
+                    displaced = self.pieces[end_position[0]][end_position[1]]
+
+                    # place rook
+                    self.pieces[end_position[0]][end_position[1]] = piece
+
+                    # if no piece was displaced, nothing more to do
+                    if displaced.type == "empty":
+                        self.change_color_to_play()
+                        return True
+
+                    #handle all bump logic
+                    self.handle_bump_chain(displaced, end_position, direction, 2)
+
             self.change_color_to_play()
             return True
         return False
+    
+    # Handles all bump-chain logic after an initial collision.
+    # PARAMS: piece - first displaced piece
+    #         start_position - where the piece currently sits
+    #         direction - normalized direction tuple (dr, dc)
+    #         momentum - distance for first piece to travel
+    def handle_bump_chain(self, piece, start_position, direction, momentum):
+        current_piece = piece
+        current_row, current_col = start_position
+        distance_covered = 0
+
+        while True:
+            bumped_this_turn = False
+
+            for _ in range(momentum):
+                distance_covered += 1
+                next_row = current_row + direction[0]
+                next_col = current_col + direction[1]
+
+                # piece falls off board
+                if not (0 <= next_row <= 7 and 0 <= next_col <= 7):
+                    return
+
+                next_piece = self.pieces[next_row][next_col]
+
+                if next_piece.type != "empty":
+                    # collision
+                    self.pieces[next_row][next_col] = current_piece
+                    current_piece = next_piece
+                    bumped_this_turn = True
+
+                current_row = next_row
+                current_col = next_col
+                momentum = 1
+
+            if not bumped_this_turn:
+                # movement completed without collision
+                # place final piece
+                self.pieces[current_row][current_col] = current_piece
+                return
+
         
     #Get all legal moves on board
     #RETURN: array of tuples containing all legal moves in move notation
@@ -101,6 +170,32 @@ class Board:
                     if (0 <= new_r <= 7 and 0 <= new_c <= 7):
                         moves.append(((r,c),(new_r,new_c)))
                 return moves
+            case 'rook':
+                directions = [        (-1, 0),
+                              ( 0,-1),        ( 0, 1),
+                                      ( 1, 0)         ]
+                start_position = (r,c)
+                for dr, dc in directions:
+                    distance_traversed = 0
+                    while True:
+                        distance_traversed += 1
+                        end_position = (r+(dr*distance_traversed),c+(dc*distance_traversed))
+                        print(f"Testing the rook at {r} {c}.")
+                        print(f"Looking at {end_position}")
+                        if (end_position[0] < 0 or
+                            end_position[0] > 7 or
+                            end_position[1] < 0 or
+                            end_position[1] > 7 ):
+                            break
+                        new_move = (start_position, end_position)
+                        moves.append(new_move)
+                        if self.pieces[end_position[0]][end_position[1]].type != "empty":
+                            break
+                return moves
+                            
+                        
+
+
 
     #Returns a compact string representing the current board state to be loaded into other games.
     def to_string(self):
