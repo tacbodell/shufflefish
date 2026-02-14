@@ -147,14 +147,16 @@ class Board:
             self.to_play = "white"
 
         
-    #Print the board to the standard output
     def display(self):
-        for row in self.pieces:
-            for piece in row:
-                # get info about piece
-                piece_to_display = piece
-                piece_code = ""
-                match piece_to_display.type:
+        for r in range(8):
+            # Print rank label (8 at top → 1 at bottom)
+            rank_label = 8 - r
+            print(f"{rank_label} ", end="")
+    
+            for c in range(8):
+                piece = self.pieces[r][c]
+    
+                match piece.type:
                     case "pawn":
                         piece_code = "P"
                     case "knight":
@@ -169,39 +171,49 @@ class Board:
                         piece_code = "K"
                     case "empty":
                         piece_code = "-"
-                        
-                if piece_to_display.color == "white":
+    
+                if piece.color == "white":
                     colored_piece = colored(f"{piece_code:2}", "white", attrs=["bold"])
-                elif piece_to_display.color == "black":
+                elif piece.color == "black":
                     colored_piece = colored(f"{piece_code:2}", "blue", attrs=["bold"])
                 else:
-                    colored_piece = f"{piece_code:2}" # fallback
+                    colored_piece = f"{piece_code:2}"
+    
                 print(colored_piece, end=" ")
             print()
+    
+        # Print file labels
+        print("  ", end="")
+        for c in range(8):
+            file_label = chr(ord('A') + c)
+            print(f"{file_label}  ", end="")
+        print()
+    
+        # Print side to move
         if self.to_play == "white":
             print(colored("White to play.", "white", attrs=["bold"]))
         else:
             print(colored("Black to play.", "blue", attrs=["bold"]))
         print()
 
-    #Converts a tuple position to algebraic notation
-    #PARAMS: tuple containing the index row and column of a position
-    #RETURN: a string with the algebraic notation of the position
-    def index_to_algebraic(position):
-        r,c = position
-        file = chr(ord('a') + c)
-        rank = str(8 - r)
+    # Converts a tuple index position to algebraic notation
+    # PARAMS: position - tuple (row, column) with 0-based indices
+    # RETURN: string in algebraic notation, e.g., "e4"
+    def index_to_algebraic(self, position):
+        r, c = position
+        file = chr(ord('a') + c)   # column 0 → 'a', column 1 → 'b', etc.
+        rank = str(8 - r)          # row 0 → rank 8, row 7 → rank 1
         return file + rank
     
     #Converts the algebraic notation of a position to index notation
     #PARAMS: string with valid algebraic notation of a position on the board
     #RETURN: a tuple representing the position in index notation
-    def algebraic_to_index(alg):
+    def algebraic_to_index(self, alg):
         file = alg[0]
-        rank = alg[1]
+        rank = int(alg[1])
 
-        r = ord(file) - ord('a')
-        c = 8 - rank
+        r = 8 - rank
+        c = ord(file) - ord('a')
         return (r,c)
 
 class Piece:
