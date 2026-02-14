@@ -184,6 +184,26 @@ class Board:
             print(colored("Black to play.", "blue", attrs=["bold"]))
         print()
 
+    #Converts a tuple position to algebraic notation
+    #PARAMS: tuple containing the index row and column of a position
+    #RETURN: a string with the algebraic notation of the position
+    def index_to_algebraic(position):
+        r,c = position
+        file = chr(ord('a') + c)
+        rank = str(8 - r)
+        return file + rank
+    
+    #Converts the algebraic notation of a position to index notation
+    #PARAMS: string with valid algebraic notation of a position on the board
+    #RETURN: a tuple representing the position in index notation
+    def algebraic_to_index(alg):
+        file = alg[0]
+        rank = alg[1]
+
+        r = ord(file) - ord('a')
+        c = 8 - rank
+        return (r,c)
+
 class Piece:
     def __init__(self, type="empty", color="None"):
         self.type = type.lower()

@@ -32,7 +32,6 @@ def test_function():
     board.set_state(chess.STATE_TWO_KINGS)
     print("PREPARE THYSELF!!")
     while (board.is_game_over()[0] == False):
-        board.display()
         command = input("Please type a move: ").split()
         if len(command) != 4:
             print("bro")
@@ -41,6 +40,7 @@ def test_function():
             move = ((start_r,start_c),(end_r,end_c))
             if not board.make_move(move):
                 print("Invalid move. Try something else. Dickhead")
+        board.display()
     winner = ""
     match board.is_game_over()[1]:
         case "W":
