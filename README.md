@@ -1,0 +1,1 @@
+Stockfish for shuffleboard chess.
