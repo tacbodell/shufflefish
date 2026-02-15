@@ -1,4 +1,4 @@
-#Stockfish for shuffleboard chess.
+Stockfish for shuffleboard chess.
 
 To run, clone the repo to your desired project folder. Then, from the root of the project, run
 
