@@ -40,7 +40,7 @@ def play_game_with_ai():
             board.display()
 
         print("Finding move...")
-        move = shufflefish.find_best_by_material(board.to_string())
+        move = shufflefish.adversarial_search(board.to_string(), 3)
         board.make_move(move)
         move_start, move_end = move
         print(f"Opponent played {board.index_to_algebraic(move_start)}, {board.index_to_algebraic(move_end)}")
