@@ -4,20 +4,7 @@ def main():
     print("Welcome to shuffleboard chess!!")
     print("Would you like to play against an ai or use the analysis board?")
     command = ""
-    while not command:
-        command = input("Enter \'ai\', \'analysis\', or \'quit\': ").strip().lower()
-        match command:
-            case "ai":
-                play_game_with_ai()
-            case "analysis":
-                do_analysis()
-            case "quit":
-                pass
-            case "test":
-                test_function()
-            case _:
-                command = ""
-                print("Invalid command. Please try again.")
+    test_function()
             
     print("Thank you for playing shuffleboard chess!")
 
@@ -29,7 +16,7 @@ def do_analysis():
 
 def test_function():
     board = chess.Board()
-    board.set_state(chess.STATE_TWO_ROOKS)
+    board.set_state(chess.STATE_START)
     board.display()
     print("PREPARE THYSELF!!")
     while (board.is_game_over()[0] == False):

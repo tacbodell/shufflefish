@@ -5,6 +5,9 @@ STATE_START = "white BR BN BB BQ BK BB BN BR BP BP BP BP BP BP BP BP 0 0 0 0 0 0
 STATE_ROOK = "white BR BR BR BR BR BR BR BR BR BR BR BR BR BR BR BR BR BR BR BR BR BR BR BR BR BR BR BR BR BR BR BR WR WR WR WR WR WR WR WR WR WR WR WR WR WR WR WR WR WR WR WR WR WR WR WR WR WR WR WR WR WR WR WR "
 STATE_TWO_KINGS = "white BK 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 WK"
 STATE_TWO_ROOKS = "white BR 0 0 BK 0 0 0 BR 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 WR 0 0 0 WK 0 0 WR"
+STATE_TWO_BISHOPS = "white BR 0 BB 0 BK BB 0 BR 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 WR 0 WB 0 WK WB 0 WR"
+STATE_QUEENS = "white BR 0 BB BQ BK BB 0 BR 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 WR 0 WB WQ WK WB 0 WR"
+STATE_KNIGHTS = "white BR BN BB BQ BK BB BN BR 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 WR WN WB WQ WK WB WN WR"
 
 
 class Board:
@@ -69,7 +72,7 @@ class Board:
                 case "king":
                     self.pieces[start_position[0]][start_position[1]] = Piece()
                     self.pieces[end_position[0]][end_position[1]] = piece
-                case "rook":
+                case "rook" | "bishop" | "queen":
                     # get movement direction
                     diffr = end_position[0] - start_position[0]
                     diffc = end_position[1] - start_position[1]
@@ -78,13 +81,13 @@ class Board:
                         0 if diffc == 0 else int(diffc / abs(diffc))
                     )
 
-                    # remove rook from start
+                    # remove first piece from start
                     self.pieces[start_position[0]][start_position[1]] = Piece()
 
                     # store displaced piece (if any)
                     displaced = self.pieces[end_position[0]][end_position[1]]
 
-                    # place rook
+                    # place first piece on end position
                     self.pieces[end_position[0]][end_position[1]] = piece
 
                     # if no piece was displaced, nothing more to do
@@ -94,6 +97,46 @@ class Board:
 
                     #handle all bump logic
                     self.handle_bump_chain(displaced, end_position, direction, 2)
+                case "knight":
+                    # store future squares that could be affected by knight move
+                    path = self.get_knight_path(start_position, end_position)
+
+                    #move knight
+                    knight = self.pieces[start_position[0]][start_position[1]]
+                    self.pieces[start_position[0]][start_position[1]] = Piece()
+                    displaced = self.pieces[end_position[0]][end_position[1]]
+                    self.pieces[end_position[0]][end_position[1]] = knight
+
+                    #handle bump chains
+                    self.handle_bump_chain_knight(displaced, path)
+                case "pawn":
+                    # get movement direction
+                    diffr = end_position[0] - start_position[0]
+                    diffc = end_position[1] - start_position[1]
+                    direction = (
+                        0 if diffr == 0 else int(diffr / abs(diffr)),
+                        0 if diffc == 0 else int(diffc / abs(diffc))
+                    )
+
+                    #if moving forward, just move and end
+                    if direction[0] == 0:
+                        start_position = Piece()
+                        end_position = piece
+                        self.change_color_to_play()
+                        return True
+                    
+                    # move pawn and store displaced piece
+                    self.pieces[start_position[0]][start_position[1]] = Piece()
+                    displaced = self.pieces[end_position[0]][end_position[1]]
+                    self.pieces[end_position[0]][end_position[1]] = piece
+
+                    # if no piece was displaced, nothing more to do
+                    if displaced.type == "empty":
+                        self.change_color_to_play()
+                        return True
+
+                    #handle all bump logic
+                    self.handle_bump_chain(displaced, end_position, direction, 1)
 
             self.change_color_to_play()
             return True
@@ -128,16 +171,34 @@ class Board:
                     self.pieces[next_row][next_col] = current_piece
                     current_piece = next_piece
                     bumped_this_turn = True
+                else:
+                    bumped_this_turn = False
 
                 current_row = next_row
                 current_col = next_col
-                momentum = 1
+
+            momentum = 1
 
             if not bumped_this_turn:
                 # movement completed without collision
                 # place final piece
                 self.pieces[current_row][current_col] = current_piece
                 return
+    
+    #Handles all bump-chain logic after an initial collision.
+    #PARAMS: displaced - a piece displaced by the knight's movement
+    #        path - an ordered list of squares in the path of the bump chain
+    def handle_bump_chain_knight(self, displaced, path):
+        held_piece = displaced
+        for position in path:
+            if self.pieces[position[0]][position[1]].type == "empty":
+                self.pieces[position[0]][position[1]] = held_piece
+                break
+            else:
+                displaced = self.pieces[position[0]][position[1]]
+                self.pieces[position[0]][position[1]] = held_piece
+                held_piece = displaced
+                
 
         
     #Get all legal moves on board
@@ -180,8 +241,6 @@ class Board:
                     while True:
                         distance_traversed += 1
                         end_position = (r+(dr*distance_traversed),c+(dc*distance_traversed))
-                        print(f"Testing the rook at {r} {c}.")
-                        print(f"Looking at {end_position}")
                         if (end_position[0] < 0 or
                             end_position[0] > 7 or
                             end_position[1] < 0 or
@@ -192,10 +251,112 @@ class Board:
                         if self.pieces[end_position[0]][end_position[1]].type != "empty":
                             break
                 return moves
-                            
-                        
+            case 'bishop':
+                directions = [(-1,-1),        (-1, 1),
+                              
+                              ( 1,-1),        ( 1, 1)]
+                start_position = (r,c)
+                for dr, dc in directions:
+                    distance_traversed = 0
+                    while True:
+                        distance_traversed += 1
+                        end_position = (r+(dr*distance_traversed),c+(dc*distance_traversed))
+                        if (end_position[0] < 0 or
+                            end_position[0] > 7 or
+                            end_position[1] < 0 or
+                            end_position[1] > 7 ):
+                            break
+                        new_move = (start_position, end_position)
+                        moves.append(new_move)
+                        if self.pieces[end_position[0]][end_position[1]].type != "empty":
+                            break
+                return moves
+            case 'queen':
+                directions = [(-1,-1),(-1, 0),(-1, 1),
+                              ( 0,-1),        ( 0, 1),
+                              ( 1,-1),( 1, 0),( 1, 1)]
+                start_position = (r,c)
+                for dr, dc in directions:
+                    distance_traversed = 0
+                    while True:
+                        distance_traversed += 1
+                        end_position = (r+(dr*distance_traversed),c+(dc*distance_traversed))
+                        if (end_position[0] < 0 or
+                            end_position[0] > 7 or
+                            end_position[1] < 0 or
+                            end_position[1] > 7 ):
+                            break
+                        new_move = (start_position, end_position)
+                        moves.append(new_move)
+                        if self.pieces[end_position[0]][end_position[1]].type != "empty":
+                            break
+                return moves
+            case 'knight':
+                jumps = [
+                    (-2,-1), (-2, 1),
+                    (-1,-2), (-1, 2),
+                    ( 1,-2), ( 1, 2),
+                    ( 2,-1), ( 2, 1)
+                ]
 
+                for dr, dc in jumps:
+                    new_r = r + dr
+                    new_c = c + dc
+                    if 0 <= new_r <= 7 and 0 <= new_c <= 7:
+                        moves.append(((r,c),(new_r,new_c)))
 
+                return moves
+            case 'pawn':
+                #Different move directions based on color
+                directions = []
+                if self.pieces[r][c].color == "white":
+                    directions = [(-1,-1),(-1, 0),(-1, 1)]
+                    if r == 6:
+                        directions.append((-2, 0))
+                else:
+                    directions = [( 1,-1),( 1, 0),( 1, 1),( 2, 0)]
+                    if r == 1:
+                        directions.append(( 2, 0))
+
+                for dr, dc in directions:
+                    new_r = r + dr
+                    new_c = c + dc
+                    if 0 <= new_r <= 7 and 0 <= new_c <= 7:
+                        #if moving straight forward, check for pieces in the way.
+                        #if diagonal, make sure there's a piece in the way.
+                        if dc == 0 and abs(dr) == 1:
+                            if self.pieces[new_r][new_c].type == "empty":
+                                moves.append(((r,c),(new_r,new_c)))
+                        elif dc == 0 and abs(dr) == 2:
+                            if (self.pieces[new_r][new_c].type == "empty"
+                                and self.pieces[new_r - (dr//2)][new_c].type == "empty"):
+                                moves.append(((r,c),(new_r,new_c)))
+                        else:
+                            if (self.pieces[new_r][new_c].type != "empty"):
+                               moves.append(((r,c),(new_r,new_c)))
+                
+                return moves
+
+    #Returns the ordered list of squares projected along a board by a knight.
+    #Example: given (0,1), (2,2):
+    #       returns [(4,3),(6,4)]
+    def get_knight_path(self, start_position, end_position):
+        start_x, start_y = start_position
+        end_x, end_y = end_position
+        path = []
+        dx = end_x - start_x
+        dy = end_y - start_y
+        
+        current_x = end_x
+        current_y = end_y
+        while True:
+            current_x += dx
+            current_y += dy
+            if (0 <= current_x <= 7 and 0 <= current_y <= 7):
+                path.append((current_x, current_y))
+            else:
+                break
+        return path
 
     #Returns a compact string representing the current board state to be loaded into other games.
     def to_string(self):
@@ -240,7 +401,6 @@ class Board:
             self.to_play = "black"
         else:
             self.to_play = "white"
-
         
     def display(self):
         for r in range(8):
