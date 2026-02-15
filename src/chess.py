@@ -189,6 +189,8 @@ class Board:
     #PARAMS: displaced - a piece displaced by the knight's movement
     #        path - an ordered list of squares in the path of the bump chain
     def handle_bump_chain_knight(self, displaced, path):
+        if displaced.type == "empty":
+            return
         held_piece = displaced
         for position in path:
             if self.pieces[position[0]][position[1]].type == "empty":
