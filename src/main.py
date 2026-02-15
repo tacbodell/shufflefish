@@ -1,8 +1,9 @@
 import chess
+import os
+os.system('color')
 
 def main():
     print("Welcome to shuffleboard chess!!")
-    print("Would you like to play against an ai or use the analysis board?")
     command = ""
     test_function()
             
