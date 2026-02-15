@@ -10,6 +10,8 @@ def main():
     match command:
         case "ai":
             play_game_with_ai()
+        case "torture":
+            ai_play_itself()
         case "analysis":
             test_function()
             
@@ -37,6 +39,7 @@ def play_game_with_ai():
                     print("Invalid move. Try something else. Dickhead")
                 else:
                     moved = True
+            print(f"Material Evaluation: {shufflefish.get_material_value(board.to_string())}")
             board.display()
 
         print("Finding move...")
@@ -44,6 +47,7 @@ def play_game_with_ai():
         board.make_move(move)
         move_start, move_end = move
         print(f"Opponent played {board.index_to_algebraic(move_start)}, {board.index_to_algebraic(move_end)}")
+        print(f"Material Evaluation: {shufflefish.get_material_value(board.to_string())}")
         board.display()
         
     winner = ""
@@ -54,6 +58,34 @@ def play_game_with_ai():
             print("Congratulations!! Black wins!!")
         case "D":
             print("what")
+
+def ai_play_itself():
+    board = chess.Board(chess.STATE_START)
+    board.display()
+    while (board.is_game_over()[0] == False):
+        print("Finding move...")
+        move = shufflefish.adversarial_search(board.to_string(), 3)
+        board.make_move(move)
+        move_start, move_end = move
+        print(f"White played {board.index_to_algebraic(move_start)}, {board.index_to_algebraic(move_end)}")
+        board.display()
+
+        print("Finding move...")
+        move = shufflefish.adversarial_search(board.to_string(), 3)
+        board.make_move(move)
+        move_start, move_end = move
+        print(f"Black played {board.index_to_algebraic(move_start)}, {board.index_to_algebraic(move_end)}")
+        board.display()
+        
+    winner = ""
+    match board.is_game_over()[1]:
+        case "W":
+            print("Congratulations!! White wins!!")
+        case "B":
+            print("Congratulations!! Black wins!!")
+        case "D":
+            print("what")
+
 
 def do_analysis():
     pass
