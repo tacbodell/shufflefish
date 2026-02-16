@@ -26,17 +26,25 @@ def play_game_with_ai():
     while (board.is_game_over()[0] == False):
         moved = False
         while moved == False:
-            command = input("Please type a move: ").strip().split()
+            command = input("Please type a move: ").strip().lower().split()
+            # check validity of move input
             if len(command) != 2:
-                print("bro")
+                print("Invalid input. Not enough arguments.")
+            elif (len(command[0]) != 2 or len(command[1]) != 2):
+                print("Invalid input. Move must be in format \"NumLetter NumLetter\". e.g. \"a1 a2\"")
+            elif (not command[0][0].islower() or
+                  not command[0][1].isdigit() or
+                  not command[1][0].islower() or
+                  not command[1][1].isdigit()   ):
+                print("Invalid input. Arguments typed incorrectly")
             else:
-                start_pos_alg, end_pos_alg = command[0], command[1]
+                start_pos_alg, end_pos_alg = command[0].lower(), command[1]
                 start_pos_ind = board.algebraic_to_index(start_pos_alg)
                 end_pos_ind = board.algebraic_to_index(end_pos_alg)
                 move = (start_pos_ind, end_pos_ind)
 
                 if not board.make_move(move):
-                    print("Invalid move. Try something else. Dickhead")
+                    print("Invalid move. Try something else.")
                 else:
                     moved = True
             print(f"Material Evaluation: {shufflefish.get_material_value(board.to_string())}")
